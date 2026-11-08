@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 
 const FALLBACK_IMAGE = "https://images.dog.ceo/breeds/barbet/n02110958_114.jpg";
 
