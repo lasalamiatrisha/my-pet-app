@@ -1,11 +1,14 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+
+const FALLBACK_IMAGE = "https://images.dog.ceo/breeds/barbet/n02110958_114.jpg";
 
 export default function App() {
   const [breeds, setBreeds] = useState<string[]>([]);
   const [breed, setBreed] = useState<string>("barbet");
-  const [imageUrl, setImageUrl] = useState<string>("https://images.dog.ceo/breeds/barbet/n02110958_114.jpg");
+  const [imageUrl, setImageUrl] = useState<string>(FALLBACK_IMAGE);
   const [loading, setLoading] = useState<boolean>(false);
 
+  // Fetch the full list of breeds on initial load
   useEffect(() => {
     fetch("https://dog.ceo/api/breeds/list/all")
       .then((res) => res.json())
@@ -13,7 +16,11 @@ export default function App() {
         if (data && data.message) {
           const breedList = Object.keys(data.message);
           setBreeds(breedList);
-          if (breedList.length > 0) setBreed(breedList[0]);
+          if (breedList.length > 0) {
+            const initialBreed = breedList[0];
+            setBreed(initialBreed);
+            fetchDogImage(initialBreed);
+          }
         }
       })
       .catch((err) => console.error("Error fetching breeds list:", err));
@@ -27,19 +34,30 @@ export default function App() {
       const data = await response.json();
       if (data && data.message) {
         setImageUrl(data.message);
+      } else {
+        setImageUrl(FALLBACK_IMAGE);
       }
     } catch (error) {
       console.error("Error fetching image:", error);
+      setImageUrl(FALLBACK_IMAGE);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (breed) {
-      fetchDogImage(breed);
-    }
-  }, [breed]);
+  // Handle manual dropdown selection
+  const handleBreedChange = (selectedBreed: string) => {
+    setBreed(selectedBreed);
+    fetchDogImage(selectedBreed);
+  };
+
+  // Handler to pick a random breed and update both selection & picture
+  const handleFetchRandom = () => {
+    if (breeds.length === 0) return;
+    const randomBreed = breeds[Math.floor(Math.random() * breeds.length)];
+    setBreed(randomBreed);
+    fetchDogImage(randomBreed);
+  };
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-pink-50 p-4 font-sans">
@@ -55,7 +73,7 @@ export default function App() {
           <div className="relative">
             <select
               value={breed}
-              onChange={(e) => setBreed(e.target.value)}
+              onChange={(e) => handleBreedChange(e.target.value)}
               className="w-full appearance-none bg-white border border-pink-200 rounded-2xl px-4 py-3 text-pink-950 font-medium focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-pink-400 cursor-pointer capitalize shadow-sm"
             >
               {breeds.map((b) => (
@@ -77,13 +95,17 @@ export default function App() {
             <img
               src={imageUrl}
               alt={breed}
+              onError={(e) => {
+                // If image fails to load, replace src with fallback image
+                (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
+              }}
               className="w-full h-64 object-cover rounded-xl shadow-sm"
             />
           )}
         </div>
 
         <button
-          onClick={() => fetchDogImage(breed)}
+          onClick={handleFetchRandom}
           className="w-full py-4 bg-pink-600 hover:bg-pink-700 text-white font-semibold rounded-2xl shadow-md transition-all duration-200 flex items-center justify-center space-x-2 active:scale-95 cursor-pointer"
         >
           <span className="text-lg">🔄</span>
